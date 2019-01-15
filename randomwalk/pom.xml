@@ -19,7 +19,8 @@
         <maven-shade-plugin.version>3.1.0</maven-shade-plugin.version>
         <exec-maven-plugin.version>1.6.0</exec-maven-plugin.version>
         <java.version>1.8</java.version>
-        <scala.binary.version>2.11</scala.binary.version>
+        <scala.binary.version>2.11.8</scala.binary.version>
+        <spark.version>2.2.1</spark.version>
     </properties>
 
     <repositories>
@@ -116,27 +117,32 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-hdfs</artifactId>
+            <version>2.7.1</version>
+        </dependency>
+        <dependency>
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-library</artifactId>
-            <version>${scala.binary.version}.8</version>
+            <version>${scala.binary.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-core_2.11</artifactId>
-            <version>2.2.0</version>
+            <version>${spark.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-mllib_2.11</artifactId>
-            <version>2.2.0</version>
+            <version>${spark.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.github.scopt</groupId>
-            <artifactId>scopt_${scala.binary.version}</artifactId>
-            <version>3.7.0</version>
+            <artifactId>scopt_2.11</artifactId>
+            <version>3.3.0</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.scala-lang</groupId>
