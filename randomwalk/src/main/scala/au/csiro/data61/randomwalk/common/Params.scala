@@ -28,5 +28,5 @@ case class Params(w2vIter: Int = 10,
                   min_indegree: Int = 2,
                   max_outdegree: Int = 1000,
                   max_indegree: Int = 1000,
-                  walking_series_input: String = null,
+                  walking_series_input: String = null
                  ) extends AbstractParams[Params]
