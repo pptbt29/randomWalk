@@ -1,8 +1,10 @@
 package au.csiro.data61.randomwalk.algorithm
 
 import au.csiro.data61.randomwalk.common.Params
+import au.csiro.data61.randomwalk.dataset.PhoneNumberPairDataset
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.Row
 import org.apache.spark.storage.StorageLevel
 
 import scala.util.{Random, Try}
@@ -16,8 +18,15 @@ case class VCutRandomWalk(context: SparkContext,
     val bcRddPartitions = context.broadcast(config.rddPartitions)
     val bcPartitioned = context.broadcast(config.partitioned)
 
-    val edgePartitions: RDD[(Int, (Array[(Int, Int, Float)], Int))] = context.textFile(config
-      .input, minPartitions = config.rddPartitions).flatMap { triplet =>
+    val pnp = new PhoneNumberPairDataset(
+      "2018-11-12",
+      "2018-11-12",
+      "2018-11-12"
+    )
+    pnp.setDegreeRange(2, 1000, 2, 100)
+
+    val edgePartitions: RDD[(Int, (Array[(Int, Int, Float)], Int))] = pnp.getPnpWithinDegreeRange().rdd
+      .map{ case Row(src_number: String, dest_number: String) => src_number + " " + dest_number}.flatMap { triplet =>
       val parts = triplet.split("\\s+")
 
       val pId: Int = bcPartitioned.value && parts.length > 2 match {

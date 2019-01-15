@@ -1,6 +1,8 @@
 package au.csiro.data61.randomwalk.algorithm
 
 import au.csiro.data61.randomwalk.common.Params
+import au.csiro.data61.randomwalk.dataset.PhoneNumberPairDataset
+import org.apache.spark.sql.Row
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.storage.StorageLevel
@@ -20,9 +22,15 @@ case class UniformRandomWalk(context: SparkContext, config: Params) extends Rand
     val bcDirected = context.broadcast(config.directed)
     val bcWeighted = context.broadcast(config.weighted) // is weighted?
 
-    val g: RDD[(Int, Array[(Int, Float)])] = context.textFile(config.input, minPartitions
-      = config
-      .rddPartitions).flatMap { triplet =>
+    val pnp = new PhoneNumberPairDataset(
+      "2018-11-12",
+      "2018-11-12",
+      "2018-11-12"
+    )
+    pnp.setDegreeRange(2, 1000, 2, 100)
+
+    val g: RDD[(Int, Array[(Int, Float)])] = pnp.getPnpWithinDegreeRange().rdd
+      .map{ case Row(src_number: String, dest_number: String) => src_number + " " + dest_number}.flatMap { triplet =>
       val parts = triplet.split("\\s+")
       // if the weights are not specified it sets it to 1.0
 
