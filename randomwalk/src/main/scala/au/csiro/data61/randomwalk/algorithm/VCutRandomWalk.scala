@@ -25,7 +25,7 @@ case class VCutRandomWalk(context: SparkContext,
     )
     pnp.setDegreeRange(2, 1000, 2, 100)
 
-    val edgePartitions: RDD[(Int, (Array[(Int, Int, Float)], Int))] = pnp.getPnpWithinDegreeRange().rdd
+    val edgePartitions: RDD[(Int, (Array[(Int, Int, Float)], Int))] = pnp.setPnpWithinDegreeRange().getIndexedPnp().rdd
       .map{ case Row(src_number: String, dest_number: String) => src_number + " " + dest_number}.flatMap { triplet =>
       val parts = triplet.split("\\s+")
 
