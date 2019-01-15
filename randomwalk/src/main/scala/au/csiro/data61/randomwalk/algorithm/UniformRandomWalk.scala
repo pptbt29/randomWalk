@@ -23,9 +23,9 @@ case class UniformRandomWalk(context: SparkContext, config: Params) extends Rand
     val bcWeighted = context.broadcast(config.weighted) // is weighted?
 
     val pnp = new PhoneNumberPairDataset(
-      "2018-11-12",
-      "2018-11-12",
-      "2018-11-12"
+      "2018-11-01",
+      "2018-11-30",
+      "2018-11-30"
     )
     pnp.setDegreeRange(2, 1000, 2, 100)
 
