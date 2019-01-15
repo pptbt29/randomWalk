@@ -23,29 +23,29 @@ case class UniformRandomWalk(context: SparkContext, config: Params) extends Rand
     val bcWeighted = context.broadcast(config.weighted) // is weighted?
 
     val pnp = new PhoneNumberPairDataset(
-      "2018-11-01",
-      "2018-11-30",
-      "2018-11-30"
+      config.contact_table_start_date,
+      config.contact_table_end_date,
+      config.user_table_date
     )
-    pnp.setDegreeRange(2, 1000, 2, 100)
+    pnp.setDegreeRange(config.min_outdegree, config.max_outdegree, config.min_indegree, config.max_indegree)
 
-    val g: RDD[(Int, Array[(Int, Float)])] = pnp.setPnpWithinDegreeRange().getIndexedPnp().rdd
-      .map{ case Row(src_number: Long, dest_number: Long) => src_number.toString + " " + dest_number.toString}.flatMap { triplet =>
-      val parts = triplet.split("\\s+")
-      // if the weights are not specified it sets it to 1.0
+    val g: RDD[(Int, Array[(Int, Float)])] = pnp.getIndexedPnpWithinDegreeRange().rdd
+      .flatMap { case Row(src_number: Long, dest_number: Long) =>
+        val parts = Array(src_number.toInt, dest_number.toInt)
+        // if the weights are not specified it sets it to 1.0
 
-      val weight = bcWeighted.value && parts.length > 2 match {
-        case true => Try(parts.last.toFloat).getOrElse(1.0f)
-        case false => 1.0f
-      }
+        val weight = bcWeighted.value && parts.length > 2 match {
+          case true => Try(parts.last.toFloat).getOrElse(1.0f)
+          case false => 1.0f
+        }
 
-      val (src, dst) = (parts.head.toInt, parts(1).toInt)
-      if (bcDirected.value) {
-        Array((src, Array((dst, weight))), (dst, Array.empty[(Int, Float)]))
-      } else {
-        Array((src, Array((dst, weight))), (dst, Array((src, weight))))
-      }
-    }.
+        val (src, dst) = (parts.head.toInt, parts(1).toInt)
+        if (bcDirected.value) {
+          Array((src, Array((dst, weight))), (dst, Array.empty[(Int, Float)]))
+        } else {
+          Array((src, Array((dst, weight))), (dst, Array((src, weight))))
+        }
+      }.
       reduceByKey(_ ++ _).
       partitionBy(partitioner).
       persist(StorageLevel.MEMORY_AND_DISK)

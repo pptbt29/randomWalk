@@ -19,35 +19,35 @@ case class VCutRandomWalk(context: SparkContext,
     val bcPartitioned = context.broadcast(config.partitioned)
 
     val pnp = new PhoneNumberPairDataset(
-      "2018-11-12",
-      "2018-11-12",
-      "2018-11-12"
+      config.contact_table_start_date,
+      config.contact_table_end_date,
+      config.user_table_date
     )
-    pnp.setDegreeRange(2, 1000, 2, 100)
+    pnp.setDegreeRange(config.min_outdegree, config.max_outdegree, config.min_indegree, config.max_indegree)
 
-    val edgePartitions: RDD[(Int, (Array[(Int, Int, Float)], Int))] = pnp.setPnpWithinDegreeRange().getIndexedPnp().rdd
-      .map{ case Row(src_number: String, dest_number: String) => src_number + " " + dest_number}.flatMap { triplet =>
-      val parts = triplet.split("\\s+")
+    val edgePartitions: RDD[(Int, (Array[(Int, Int, Float)], Int))] = pnp.getIndexedPnpWithinDegreeRange().rdd
+      .flatMap { case Row(src_number: Long, dest_number: Long) =>
+        val parts = Array(src_number.toInt, dest_number.toInt)
 
-      val pId: Int = bcPartitioned.value && parts.length > 2 match {
-        case true => Try(parts(2).toInt).getOrElse(Random.nextInt(bcRddPartitions.value))
-        case false => Random.nextInt(bcRddPartitions.value)
-      }
+        val pId: Int = bcPartitioned.value && parts.length > 2 match {
+          case true => Try(parts(2).toInt).getOrElse(Random.nextInt(bcRddPartitions.value))
+          case false => Random.nextInt(bcRddPartitions.value)
+        }
 
-      // if the weights are not specified it sets it to 1.0
-      val weight = bcWeighted.value && parts.length > 3 match {
-        case true => Try(parts.last.toFloat).getOrElse(1.0f)
-        case false => 1.0f
-      }
+        // if the weights are not specified it sets it to 1.0
+        val weight = bcWeighted.value && parts.length > 3 match {
+          case true => Try(parts.last.toFloat).getOrElse(1.0f)
+          case false => 1.0f
+        }
 
-      val (src, dst) = (parts.head.toInt, parts(1).toInt)
-      val srcTuple = (src, (Array((dst, pId, weight)), pId))
-      if (bcDirected.value) {
-        Array(srcTuple, (dst, (Array.empty[(Int, Int, Float)], pId)))
-      } else {
-        Array(srcTuple, (dst, (Array((src, pId, weight)), pId)))
-      }
-    }.partitionBy(partitioner).persist(StorageLevel.MEMORY_AND_DISK)
+        val (src, dst) = (parts.head.toInt, parts(1).toInt)
+        val srcTuple = (src, (Array((dst, pId, weight)), pId))
+        if (bcDirected.value) {
+          Array(srcTuple, (dst, (Array.empty[(Int, Int, Float)], pId)))
+        } else {
+          Array(srcTuple, (dst, (Array((src, pId, weight)), pId)))
+        }
+      }.partitionBy(partitioner).persist(StorageLevel.MEMORY_AND_DISK)
 
     val vertexPartitions = edgePartitions.mapPartitions({ iter =>
       iter.map { case (src, (_, pId)) =>
