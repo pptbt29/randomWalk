@@ -1,5 +1,6 @@
 package au.csiro.data61.randomwalk
 
+import java.io._
 import au.csiro.data61.randomwalk.algorithm.{UniformRandomWalk, VCutRandomWalk}
 import au.csiro.data61.randomwalk.common.CommandParser.TaskName
 import au.csiro.data61.randomwalk.common.{CommandParser, Params, Property}
@@ -8,9 +9,11 @@ import org.apache.log4j.LogManager
 import org.apache.spark.mllib.feature.{Word2Vec, Word2VecModel}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}
+import org.apache.spark.sql.SparkSession
 import org.scalactic.{Every, Good, Or}
 import spark.jobserver.SparkJobInvalid
 import spark.jobserver.api._
+
 
 object Main extends SparkJob {
   lazy val logger = LogManager.getLogger("myLogger")
@@ -18,8 +21,14 @@ object Main extends SparkJob {
   def main(args: Array[String]) {
     CommandParser.parse(args) match {
       case Some(params) =>
-        val conf = new SparkConf().setAppName("stellar-random-walk")
-        val context: SparkContext = new SparkContext(conf)
+        val warehouseLocation = new File("spark-warehouse").getAbsolutePath
+        val spark = SparkSession.builder
+          .appName("stellar-random-walk")
+          .config("spark.sql.warehouse.dir", warehouseLocation)
+          .enableHiveSupport()
+          .getOrCreate()
+        spark.sparkContext.setLogLevel("WARN")
+        val context: SparkContext = spark.sparkContext
         runJob(context, null, params)
 
       case None => sys.exit(1)
