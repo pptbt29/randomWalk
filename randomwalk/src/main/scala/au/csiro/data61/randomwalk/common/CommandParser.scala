@@ -34,6 +34,7 @@ object CommandParser {
   val MIN_INDEGREE = "minIndegree"
   val MAX_OUTDEGREE = "maxOutdegree"
   val MAX_INDEGREE = "maxIndegree"
+  val WALKING_SERIES_INPUT = "walkingSeriesInput"
 
   private lazy val defaultParams = Params()
   private lazy val parser = new OptionParser[Params]("2nd Order Random Walk + Word2Vec") {
@@ -118,6 +119,9 @@ object CommandParser {
     opt[String](MIN_INDEGREE)
       .text(s"Maximum indegree: ${defaultParams.max_indegree}")
       .action((x, c) => c.copy(user_table_date = x))
+    opt[String](WALKING_SERIES_INPUT)
+      .text("Path of walking series input for embedding: empty")
+      .action((x, c) => c.copy(walking_series_input = x))
     note(
       s"""
          |For example, to run the application you can use the following command:
