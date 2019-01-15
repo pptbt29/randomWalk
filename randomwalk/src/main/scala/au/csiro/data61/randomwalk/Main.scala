@@ -137,18 +137,20 @@ object Main extends SparkJob {
   = {
 
     params.cmd match {
-      case TaskName.node2vec =>
+      case TaskName.node2vec => {
         val paths = doRandomWalk(context, params)
         val word2Vec = configureWord2Vec(params)
         val model = word2Vec.fit(convertPathsToIterables(paths))
         saveModelAndFeatures(model, context, params)
+      }
       case TaskName.randomwalk => doRandomWalk(context, params)
-      case TaskName.embedding =>
+      case TaskName.embedding =>{
         val paths = context.textFile(params.walking_series_input).repartition(params.rddPartitions).
           map(_.split("\\s+").toSeq)
         val word2Vec = configureWord2Vec(params)
         val model = word2Vec.fit(paths)
         saveModelAndFeatures(model, context, params)
+      }
     }
     params.output
   }
