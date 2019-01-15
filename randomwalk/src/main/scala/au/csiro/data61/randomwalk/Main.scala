@@ -10,12 +10,14 @@ import org.apache.log4j.LogManager
 import org.apache.spark.mllib.feature.{Word2Vec, Word2VecModel}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}
-import org.apache.spark.sql.{Row}
+import org.apache.spark.sql.Row
 import org.apache.spark.sql.SparkSession
 import org.scalactic.{Every, Good, Or}
 import spark.jobserver.SparkJobInvalid
 import spark.jobserver.api._
 import au.csiro.data61.randomwalk.dataset.PhoneNumberPairDataset
+
+import scala.collection.mutable
 
 
 object Main extends SparkJob {
@@ -63,7 +65,7 @@ object Main extends SparkJob {
       .toDF("nodeId", "vector")
     node_vector.join(idOfPhoneNumber, node_vector("nodeId") === idOfPhoneNumber("id"))
       .select("phone_number", "vector").rdd
-      .map { case Row(phone_number, vector: Array[Float]) =>
+      .map { case Row(phone_number, vector: mutable.WrappedArray[Float]) =>
       s"$phone_number\t${vector.mkString("\t")}"
     }.repartition(numPartitions).saveAsTextFile(s"${config.output}/${Property.vectorSuffix}")
   }
