@@ -30,7 +30,7 @@ case class UniformRandomWalk(context: SparkContext, config: Params) extends Rand
     pnp.setDegreeRange(2, 1000, 2, 100)
 
     val g: RDD[(Int, Array[(Int, Float)])] = pnp.setPnpWithinDegreeRange().getIndexedPnp().rdd
-      .map{ case Row(src_number: String, dest_number: String) => src_number + " " + dest_number}.flatMap { triplet =>
+      .map{ case Row(src_number: Long, dest_number: Long) => src_number.toString + " " + dest_number.toString}.flatMap { triplet =>
       val parts = triplet.split("\\s+")
       // if the weights are not specified it sets it to 1.0
 
