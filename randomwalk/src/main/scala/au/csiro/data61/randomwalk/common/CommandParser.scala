@@ -17,7 +17,6 @@ object CommandParser {
   val WEIGHTED = "weighted"
   val DIRECTED = "directed"
   val W2V_PARTITIONS = "w2vPartitions"
-  val INPUT = "input"
   val OUTPUT = "output"
   val CMD = "cmd"
   val KRYO = "kryo"
@@ -27,6 +26,14 @@ object CommandParser {
   val DIMENSION = "dim"
   val WINDOW = "window"
   val SINGLE_OUTPUT = "singleOutput"
+  val CONTACT_TABLE_START_DATE = "contactTableStartDate"
+  val CONTACT_TABLE_END_DATE = "contactTableEndDate"
+  val USER_TABLE_DATE = "userTableDate"
+  val REGION_IDS = "regionIds"
+  val MIN_OUTDEGREE = "minOutdegree"
+  val MIN_INDEGREE = "minIndegree"
+  val MAX_OUTDEGREE = "maxOutdegree"
+  val MAX_INDEGREE = "maxIndegree"
 
   private lazy val defaultParams = Params()
   private lazy val parser = new OptionParser[Params]("2nd Order Random Walk + Word2Vec") {
@@ -61,10 +68,6 @@ object CommandParser {
     opt[Int](W2V_PARTITIONS)
       .text(s"Number of partitions in word2vec: ${defaultParams.w2vPartitions}")
       .action((x, c) => c.copy(w2vPartitions = x))
-    opt[String](INPUT)
-      .required()
-      .text("Input edge file path: empty")
-      .action((x, c) => c.copy(input = x))
     opt[String](OUTPUT)
       .required()
       .text("Output path: empty")
@@ -88,6 +91,33 @@ object CommandParser {
     opt[Int](WINDOW)
       .text(s"Window size in word2vec: ${defaultParams.w2vWindow}")
       .action((x, c) => c.copy(w2vWindow = x))
+    opt[String](CONTACT_TABLE_START_DATE)
+      .required()
+      .text("Contact table start date: empty")
+      .action((x, c) => c.copy(contact_table_start_date = x))
+    opt[String](CONTACT_TABLE_END_DATE)
+      .required()
+      .text("Contact table end date: empty")
+      .action((x, c) => c.copy(contact_table_end_date = x))
+    opt[String](USER_TABLE_DATE)
+      .required()
+      .text("User table date: empty")
+      .action((x, c) => c.copy(user_table_date = x))
+    opt[String](REGION_IDS)
+      .text("Region id array: empty")
+      .action((x, c) => c.copy(region_ids = x.split("\\s")))
+    opt[String](MIN_OUTDEGREE)
+      .text(s"Minimum outdegree: ${defaultParams.min_outdegree}")
+      .action((x, c) => c.copy(user_table_date = x))
+    opt[String](MIN_INDEGREE)
+      .text(s"Minimum indegree: ${defaultParams.min_indegree}")
+      .action((x, c) => c.copy(user_table_date = x))
+    opt[String](MAX_OUTDEGREE)
+      .text(s"Maximum outdegree: ${defaultParams.max_outdegree}")
+      .action((x, c) => c.copy(user_table_date = x))
+    opt[String](MIN_INDEGREE)
+      .text(s"Maximum indegree: ${defaultParams.max_indegree}")
+      .action((x, c) => c.copy(user_table_date = x))
     note(
       s"""
          |For example, to run the application you can use the following command:
@@ -99,7 +129,6 @@ object CommandParser {
         s"|   --$W2V_PARTITIONS ${defaultParams.w2vPartitions}" +
         s"|   --$DIMENSION ${defaultParams.w2vDim}" +
         s"|   --$WINDOW ${defaultParams.w2vWindow}" +
-        s"|   --$INPUT <path>" +
         s"|   --$OUTPUT <path>"
     )
   }
