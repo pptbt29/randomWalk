@@ -2,6 +2,7 @@ package au.csiro.data61.randomwalk.common
 
 import au.csiro.data61.randomwalk.common.CommandParser.TaskName
 import au.csiro.data61.randomwalk.common.CommandParser.TaskName.TaskName
+import au.csiro.data61.randomwalk.dataset.PhoneNumberPairDataset
 
 
 case class Params(w2vIter: Int = 10,
@@ -16,6 +17,7 @@ case class Params(w2vIter: Int = 10,
                   weighted: Boolean = false,
                   directed: Boolean = false,
                   output: String = null,
+                  var input: PhoneNumberPairDataset = null,
                   rddPartitions: Int = 200,
                   singleOutput: Boolean = true,
                   partitioned: Boolean = false,

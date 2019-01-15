@@ -1,6 +1,7 @@
 package au.csiro.data61.randomwalk
 
 import java.io._
+
 import au.csiro.data61.randomwalk.algorithm.{UniformRandomWalk, VCutRandomWalk}
 import au.csiro.data61.randomwalk.common.CommandParser.TaskName
 import au.csiro.data61.randomwalk.common.{CommandParser, Params, Property}
@@ -9,26 +10,37 @@ import org.apache.log4j.LogManager
 import org.apache.spark.mllib.feature.{Word2Vec, Word2VecModel}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}
+import org.apache.spark.sql.{Row}
 import org.apache.spark.sql.SparkSession
 import org.scalactic.{Every, Good, Or}
 import spark.jobserver.SparkJobInvalid
 import spark.jobserver.api._
+import au.csiro.data61.randomwalk.dataset.PhoneNumberPairDataset
 
 
 object Main extends SparkJob {
   lazy val logger = LogManager.getLogger("myLogger")
 
+  val warehouseLocation = new File("spark-warehouse").getAbsolutePath
+  val spark = SparkSession.builder
+    .appName("stellar-random-walk")
+    .config("spark.sql.warehouse.dir", warehouseLocation)
+    .enableHiveSupport()
+    .getOrCreate()
+  spark.sparkContext.setLogLevel("WARN")
+  import spark.implicits._
+
   def main(args: Array[String]) {
     CommandParser.parse(args) match {
       case Some(params) =>
-        val warehouseLocation = new File("spark-warehouse").getAbsolutePath
-        val spark = SparkSession.builder
-          .appName("stellar-random-walk")
-          .config("spark.sql.warehouse.dir", warehouseLocation)
-          .enableHiveSupport()
-          .getOrCreate()
-        spark.sparkContext.setLogLevel("WARN")
         val context: SparkContext = spark.sparkContext
+        val pnp = new PhoneNumberPairDataset(
+          params.contact_table_start_date,
+          params.contact_table_end_date,
+          params.user_table_date
+        )
+        pnp.setDegreeRange(params.min_outdegree, params.max_outdegree, params.min_indegree, params.max_indegree)
+        params.input = pnp
         runJob(context, null, params)
 
       case None => sys.exit(1)
@@ -45,10 +57,14 @@ object Main extends SparkJob {
   private def saveModelAndFeatures(model: Word2VecModel, context: SparkContext, config: Params)
   : Unit = {
     model.save(context, s"${config.output}/${Property.modelSuffix}")
+    val idOfPhoneNumber = config.input.idOfPhoneNumberWithinRange
     val numPartitions = getNumOutputPartition(config)
-    context.parallelize(model.getVectors.toList, config.rddPartitions).map { case (nodeId,
-    vector) =>
-      s"$nodeId\t${vector.mkString("\t")}"
+    val node_vector = context.parallelize(model.getVectors.toList, config.rddPartitions)
+      .toDF("nodeId", "vector")
+    node_vector.join(idOfPhoneNumber, node_vector("nodeId") === idOfPhoneNumber("id"))
+      .select("phone_number", "vector").rdd
+      .map { case Row(phone_number, vector: Array[Float]) =>
+      s"$phone_number\t${vector.mkString("\t")}"
     }.repartition(numPartitions).saveAsTextFile(s"${config.output}/${Property.vectorSuffix}")
   }
 
