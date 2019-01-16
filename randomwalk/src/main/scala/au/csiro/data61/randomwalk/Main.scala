@@ -49,7 +49,7 @@ object Main extends SparkJob {
         pnp.setDegreeRange(params.min_outdegree, params.max_outdegree, params.min_indegree, params.max_indegree)
             .setIndexedPnpWithinDegreeRange()
         params.input = pnp
-        hdfsWriter.write("Data fetch is done")
+        hdfsWriter.write("PhoneNumberPair is all set")
         runJob(context, null, params)
 
       case None => sys.exit(1)
