@@ -46,7 +46,7 @@ class PhoneNumberPairDataset(
     idOfPhoneNumberWithinRange.count()
   }
 
-  def numberOfdistinctPhonePairCountWithinDegreeRange: Long = {
+  def numberOfdistinctPhonePairWithinDegreeRange: Long = {
     checkIfDegreeRangeIsSet()
     checkIfPnpWithinDegreeRangeIsSet()
     indexedPnpWithinDegreeRange.count()
