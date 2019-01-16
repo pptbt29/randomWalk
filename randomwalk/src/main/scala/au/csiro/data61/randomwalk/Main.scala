@@ -2,6 +2,7 @@ package au.csiro.data61.randomwalk
 
 import java.io._
 
+import au.csiro.data61.randomwalk.tool.HDFSWriter
 import au.csiro.data61.randomwalk.algorithm.{UniformRandomWalk, VCutRandomWalk}
 import au.csiro.data61.randomwalk.common.CommandParser.TaskName
 import au.csiro.data61.randomwalk.common.{CommandParser, Params, Property}
@@ -32,6 +33,8 @@ object Main extends SparkJob {
   spark.sparkContext.setLogLevel("WARN")
   import spark.implicits._
 
+  val hdfsWriter = new HDFSWriter(spark, "syang/output/status_record", true)
+
   def main(args: Array[String]) {
     CommandParser.parse(args) match {
       case Some(params) =>
@@ -58,7 +61,9 @@ object Main extends SparkJob {
     */
   private def saveModelAndFeatures(model: Word2VecModel, context: SparkContext, config: Params)
   : Unit = {
+    hdfsWriter.write("Saving model ...")
     model.save(context, s"${config.output}/${Property.modelSuffix}")
+    hdfsWriter.write("Model is already saved. Start to encode phone number id ...")
     val idOfPhoneNumber = config.input.idOfPhoneNumberWithinRange
     val numPartitions = getNumOutputPartition(config)
     val node_vector = context.parallelize(model.getVectors.toList, config.rddPartitions)
@@ -82,9 +87,18 @@ object Main extends SparkJob {
       case true => VCutRandomWalk(context, param)
       case false => UniformRandomWalk(context, param)
     }
+
+    hdfsWriter.write("Random walk start ...")
     val paths = rw.execute()
     val numPartitions = getNumOutputPartition(param)
+
+    hdfsWriter.write("Random walk done")
+    //TODO: record if the save step already started
+    hdfsWriter.write("Saving random walk path ...")
+
     rw.save(paths, numPartitions, param.output)
+
+    hdfsWriter.write("Random walk already saved")
     paths
   }
 
@@ -139,8 +153,12 @@ object Main extends SparkJob {
     params.cmd match {
       case TaskName.node2vec => {
         val paths = doRandomWalk(context, params)
+
+        hdfsWriter.write("Configuring word2Vec ...")
         val word2Vec = configureWord2Vec(params)
+        hdfsWriter.write("Training word2Vec ...")
         val model = word2Vec.fit(convertPathsToIterables(paths))
+        hdfsWriter.write("Model is successfully trained. Start to save it ...")
         saveModelAndFeatures(model, context, params)
       }
       case TaskName.randomwalk => doRandomWalk(context, params)
