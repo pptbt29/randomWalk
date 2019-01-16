@@ -22,14 +22,7 @@ case class UniformRandomWalk(context: SparkContext, config: Params) extends Rand
     val bcDirected = context.broadcast(config.directed)
     val bcWeighted = context.broadcast(config.weighted) // is weighted?
 
-    val pnp = new PhoneNumberPairDataset(
-      config.contact_table_start_date,
-      config.contact_table_end_date,
-      config.user_table_date
-    )
-    pnp.setDegreeRange(config.min_outdegree, config.max_outdegree, config.min_indegree, config.max_indegree)
-
-    val g: RDD[(Int, Array[(Int, Float)])] = pnp.getIndexedPnpWithinDegreeRange().rdd
+    val g: RDD[(Int, Array[(Int, Float)])] = config.input.indexedPnpWithinDegreeRange.rdd
       .flatMap { case Row(src_number: Long, dest_number: Long) =>
         val parts = Array(src_number.toInt, dest_number.toInt)
         // if the weights are not specified it sets it to 1.0

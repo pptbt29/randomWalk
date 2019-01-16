@@ -30,7 +30,7 @@ class PhoneNumberPairDataset(
     this
   }
 
-  def getIndexedPnpWithinDegreeRange(): DataFrame = {
+  def setIndexedPnpWithinDegreeRange(): PhoneNumberPairDataset = {
     checkIfDegreeRangeIsSet()
     val dfTemp = pnp
       .join(idOfPhoneNumberWithinRange, pnp("src_number") === idOfPhoneNumberWithinRange("phone_number"))
@@ -38,7 +38,7 @@ class PhoneNumberPairDataset(
     indexedPnpWithinDegreeRange = dfTemp
       .join(idOfPhoneNumberWithinRange, dfTemp("dest_number") === idOfPhoneNumberWithinRange("phone_number"))
       .select("src_number", "id").toDF("src_number", "id")
-    indexedPnpWithinDegreeRange
+    this
   }
 
   def numberOfdistinctPhoneWithinDegreeRange: Long = {

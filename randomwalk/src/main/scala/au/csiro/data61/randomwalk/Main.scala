@@ -39,13 +39,17 @@ object Main extends SparkJob {
     CommandParser.parse(args) match {
       case Some(params) =>
         val context: SparkContext = spark.sparkContext
+
+        hdfsWriter.write("Start to fetch data ...")
         val pnp = new PhoneNumberPairDataset(
           params.contact_table_start_date,
           params.contact_table_end_date,
           params.user_table_date
         )
         pnp.setDegreeRange(params.min_outdegree, params.max_outdegree, params.min_indegree, params.max_indegree)
+            .setIndexedPnpWithinDegreeRange()
         params.input = pnp
+        hdfsWriter.write("Data fetch is done")
         runJob(context, null, params)
 
       case None => sys.exit(1)
