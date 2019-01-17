@@ -17,6 +17,7 @@ class PhoneNumberPairDataset(
   var inDegreeForEachPhoneNumWithinRange: DataFrame = _
   var idOfPhoneNumberWithinRange: DataFrame = _
 
+  var pnpWithinDegreeRange: DataFrame = _
   var indexedPnpWithinDegreeRange: DataFrame = _
 
   def setDegreeRange(minOutDegree: Int, maxOutDegree: Int, minInDegree: Int, maxIndegree: Int): PhoneNumberPairDataset = {
@@ -30,6 +31,17 @@ class PhoneNumberPairDataset(
     this
   }
 
+  def setPnpWithinDegreeRange(): PhoneNumberPairDataset = {
+    checkIfDegreeRangeIsSet()
+    val dfTemp = pnp
+      .join(idOfPhoneNumberWithinRange, pnp("src_number") === idOfPhoneNumberWithinRange("phone_number"))
+      .select("src_number", "dest_number")
+    pnpWithinDegreeRange = dfTemp
+      .join(idOfPhoneNumberWithinRange, dfTemp("dest_number") === idOfPhoneNumberWithinRange("phone_number"))
+      .select("src_number", "dest_number")
+    this
+  }
+
   def setIndexedPnpWithinDegreeRange(): PhoneNumberPairDataset = {
     checkIfDegreeRangeIsSet()
     val dfTemp = pnp
@@ -37,16 +49,16 @@ class PhoneNumberPairDataset(
       .select("id", "dest_number").toDF("src_number", "dest_number")
     indexedPnpWithinDegreeRange = dfTemp
       .join(idOfPhoneNumberWithinRange, dfTemp("dest_number") === idOfPhoneNumberWithinRange("phone_number"))
-      .select("src_number", "id").toDF("src_number", "id")
+      .select("src_number", "id").toDF("src_number_id", "dest_number_id")
     this
   }
 
-  def numberOfdistinctPhoneWithinDegreeRange: Long = {
+  def numberOfDistinctPhoneWithinDegreeRange: Long = {
     checkIfDegreeRangeIsSet()
     idOfPhoneNumberWithinRange.count()
   }
 
-  def numberOfdistinctPhonePairWithinDegreeRange: Long = {
+  def numberOfDistinctPhonePairWithinDegreeRange: Long = {
     checkIfDegreeRangeIsSet()
     checkIfPnpWithinDegreeRangeIsSet()
     indexedPnpWithinDegreeRange.count()
