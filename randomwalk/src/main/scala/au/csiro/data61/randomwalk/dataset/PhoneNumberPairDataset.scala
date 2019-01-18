@@ -54,8 +54,10 @@ class PhoneNumberPairDataset(
     for(i <- 0 to 3) {
       updateIdOfPhoneNumberTable(minOutDegree, maxOutDegree, minInDegree, maxIndegree)
       trimPnp()
-      wt.write(s"$i row of trim: node: $numberOfDistinctPhoneWithinDegreeRange, edge: $numberOfDistinctPhonePairWithinDegreeRange \n")
+      wt.writeLine(s"$i row of trim: node: $numberOfDistinctPhoneWithinDegreeRange, edge: $numberOfDistinctPhonePairWithinDegreeRange")
+      wt.flush()
     }
+    wt.close()
     this
   }
 
@@ -65,14 +67,16 @@ class PhoneNumberPairDataset(
       updateIdOfPhoneNumberTable(minOutDegree, maxOutDegree, minInDegree, maxIndegree)
       if (i == 3) {
         trimAndIndexPnp()
-        wt.write(s"$i row of trim: node: $numberOfDistinctPhoneWithinDegreeRange, edge: ${indexedPnpWithinDegreeRange.count()} \n")
+        wt.writeLine(s"$i row of trim: node: $numberOfDistinctPhoneWithinDegreeRange, edge: ${indexedPnpWithinDegreeRange.count()} ")
+        wt.flush()
       }
       else {
         trimPnp()
-        wt.write(s"$i row of trim: node: $numberOfDistinctPhoneWithinDegreeRange, edge: $numberOfDistinctPhonePairWithinDegreeRange \n")
+        wt.writeLine(s"$i row of trim: node: $numberOfDistinctPhoneWithinDegreeRange, edge: $numberOfDistinctPhonePairWithinDegreeRange ")
+        wt.flush()
       }
-
     }
+    wt.close()
     this
   }
 
