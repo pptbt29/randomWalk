@@ -47,8 +47,8 @@ object Main extends SparkJob {
         pnp.setDegreeRange(params.min_outdegree, params.max_outdegree, params.min_indegree, params.max_indegree)
             .setIndexedPnpWithinDegreeRange()
         params.input = pnp
-        hdfsWriter.write(s"Phone number node: ${pnp.numberOfdistinctPhoneWithinDegreeRange}" +
-          s" \t Phone number edge: ${pnp.numberOfdistinctPhonePairWithinDegreeRange}")
+        hdfsWriter.write(s"Phone number node: ${pnp.numberOfDistinctPhoneWithinDegreeRange}" +
+          s" \t Phone number edge: ${pnp.numberOfDistinctPhonePairWithinDegreeRange}")
         runJob(context, null, params)
 
       case None => sys.exit(1)
