@@ -1,5 +1,6 @@
 package au.csiro.data61.randomwalk.dataset
 
+import au.csiro.data61.randomwalk.tool.HDFSWriter
 import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 
 class PhoneNumberPairDataset(
@@ -12,15 +13,14 @@ class PhoneNumberPairDataset(
 
   import spark.implicits._
 
-  val pnp: DataFrame = DatasetFactory.phoneNumberPairsGenerator(i_user_contact_start_date, i_user_contact_end_date, a_user_table_date)
+  var pnp: DataFrame = DatasetFactory.phoneNumberPairsGenerator(i_user_contact_start_date, i_user_contact_end_date, a_user_table_date)
   var outDegreeForEachPhoneNumWithinRange: DataFrame = _
   var inDegreeForEachPhoneNumWithinRange: DataFrame = _
   var idOfPhoneNumberWithinRange: DataFrame = _
 
-  var pnpWithinDegreeRange: DataFrame = _
   var indexedPnpWithinDegreeRange: DataFrame = _
 
-  def setDegreeRange(minOutDegree: Int, maxOutDegree: Int, minInDegree: Int, maxIndegree: Int): PhoneNumberPairDataset = {
+  def updateIdOfPhoneNumberTable(minOutDegree: Int, maxOutDegree: Int, minInDegree: Int, maxIndegree: Int): PhoneNumberPairDataset = {
     outDegreeForEachPhoneNumWithinRange = getOutDegreeForEachPhoneNumWithinRange(minOutDegree, maxOutDegree)
     inDegreeForEachPhoneNumWithinRange = getInDegreeForEachPhoneNumWithinRange(minInDegree, maxIndegree)
     idOfPhoneNumberWithinRange = inDegreeForEachPhoneNumWithinRange.join(outDegreeForEachPhoneNumWithinRange,
@@ -31,25 +31,48 @@ class PhoneNumberPairDataset(
     this
   }
 
-  def setPnpWithinDegreeRange(): PhoneNumberPairDataset = {
-    checkIfDegreeRangeIsSet()
+  def trimPnp() = {
     val dfTemp = pnp
       .join(idOfPhoneNumberWithinRange, pnp("src_number") === idOfPhoneNumberWithinRange("phone_number"))
       .select("src_number", "dest_number")
-    pnpWithinDegreeRange = dfTemp
+    pnp = dfTemp
       .join(idOfPhoneNumberWithinRange, dfTemp("dest_number") === idOfPhoneNumberWithinRange("phone_number"))
       .select("src_number", "dest_number")
-    this
   }
 
-  def setIndexedPnpWithinDegreeRange(): PhoneNumberPairDataset = {
-    checkIfDegreeRangeIsSet()
+  def trimAndIndexPnp() = {
     val dfTemp = pnp
       .join(idOfPhoneNumberWithinRange, pnp("src_number") === idOfPhoneNumberWithinRange("phone_number"))
       .select("id", "dest_number").toDF("src_number", "dest_number")
     indexedPnpWithinDegreeRange = dfTemp
       .join(idOfPhoneNumberWithinRange, dfTemp("dest_number") === idOfPhoneNumberWithinRange("phone_number"))
       .select("src_number", "id").toDF("src_number_id", "dest_number_id")
+  }
+
+  def setPnpWithinDegreeRange(minOutDegree: Int, maxOutDegree: Int, minInDegree: Int, maxIndegree: Int, path: String): PhoneNumberPairDataset = {
+    val wt = new HDFSWriter(spark, path, true)
+    for(i <- 0 to 3) {
+      updateIdOfPhoneNumberTable(minOutDegree, maxOutDegree, minInDegree, maxIndegree)
+      trimPnp()
+      wt.write(s"$i row of trim: node: $numberOfDistinctPhoneWithinDegreeRange, edge: $numberOfDistinctPhonePairWithinDegreeRange \n")
+    }
+    this
+  }
+
+  def setIndexedPnpWithinDegreeRange(minOutDegree: Int, maxOutDegree: Int, minInDegree: Int, maxIndegree: Int, path: String): PhoneNumberPairDataset = {
+    val wt = new HDFSWriter(spark, path, true)
+    for(i <- 0 to 3) {
+      updateIdOfPhoneNumberTable(minOutDegree, maxOutDegree, minInDegree, maxIndegree)
+      if (i == 3) {
+        trimAndIndexPnp()
+        wt.write(s"$i row of trim: node: $numberOfDistinctPhoneWithinDegreeRange, edge: ${indexedPnpWithinDegreeRange.count()} \n")
+      }
+      else {
+        trimPnp()
+        wt.write(s"$i row of trim: node: $numberOfDistinctPhoneWithinDegreeRange, edge: $numberOfDistinctPhonePairWithinDegreeRange \n")
+      }
+
+    }
     this
   }
 
@@ -60,8 +83,7 @@ class PhoneNumberPairDataset(
 
   def numberOfDistinctPhonePairWithinDegreeRange: Long = {
     checkIfDegreeRangeIsSet()
-    checkIfPnpWithinDegreeRangeIsSet()
-    indexedPnpWithinDegreeRange.count()
+    pnp.count()
   }
 
   def getOutDegreeForEachPhoneNumWithinRange(minOutDegree: Int, maxOutDegree: Int): DataFrame = {
@@ -99,10 +121,5 @@ class PhoneNumberPairDataset(
   def checkIfDegreeRangeIsSet(): Unit = {
     if (outDegreeForEachPhoneNumWithinRange == null || inDegreeForEachPhoneNumWithinRange == null)
       throw new Exception("Setup the degree range first")
-  }
-
-  def checkIfPnpWithinDegreeRangeIsSet(): Unit = {
-    if (indexedPnpWithinDegreeRange == null)
-      throw new Exception("Set the pnpWithinDegreeRange first")
   }
 }
