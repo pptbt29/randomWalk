@@ -124,7 +124,7 @@ object Main extends SparkJob {
     word2vec.setLearningRate(param.w2vLr)
       .setNumIterations(param.w2vIter)
       .setNumPartitions(param.w2vPartitions)
-      .setMinCount(0)
+      .setMinCount(2)
       .setVectorSize(param.w2vDim)
       .setWindowSize(param.w2vWindow)
   }
