@@ -44,8 +44,13 @@ object Main extends SparkJob {
           params.contact_table_end_date,
           params.user_table_date
         )
-        pnp.setDegreeRange(params.min_outdegree, params.max_outdegree, params.min_indegree, params.max_indegree)
-            .setIndexedPnpWithinDegreeRange()
+        pnp.setIndexedPnpWithinDegreeRange(
+          params.min_outdegree,
+          params.max_outdegree,
+          params.min_indegree,
+          params.max_indegree,
+          params.output
+        )
         params.input = pnp
         hdfsWriter.write(s"Phone number node: ${pnp.numberOfDistinctPhoneWithinDegreeRange}" +
           s" \t Phone number edge: ${pnp.numberOfDistinctPhonePairWithinDegreeRange}")
