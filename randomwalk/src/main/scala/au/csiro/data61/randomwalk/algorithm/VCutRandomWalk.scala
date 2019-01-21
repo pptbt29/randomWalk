@@ -18,7 +18,7 @@ case class VCutRandomWalk(context: SparkContext,
     val bcRddPartitions = context.broadcast(config.rddPartitions)
     val bcPartitioned = context.broadcast(config.partitioned)
 
-    val edgePartitions: RDD[(Int, (Array[(Int, Int, Float)], Int))] = config.input.setPnpWithinDegreeRange().pnpWithinDegreeRange.rdd
+    val edgePartitions: RDD[(Int, (Array[(Int, Int, Float)], Int))] = config.input.indexedPnpWithinDegreeRange.rdd
       .flatMap { case Row(src_number: Long, dest_number: Long) =>
         val parts = Array(src_number.toInt, dest_number.toInt)
 
