@@ -46,7 +46,7 @@ object Main extends SparkJob {
         )
         pnp.setDegreeRange(params.min_outdegree, params.max_outdegree, params.min_indegree, params.max_indegree)
             .setIndexedPnpWithinDegreeRange()
-        pnp.idOfPhoneNumberWithinRange.rdd.saveAsTextFile(s"${params.output}/id2phoneNumber")
+        pnp.idOfPhoneNumberWithinRange.rdd.repartition(1).saveAsTextFile(s"${params.output}/id2phoneNumber")
         params.input = pnp
         hdfsWriter.write(s"Phone number node: ${pnp.numberOfDistinctPhoneWithinDegreeRange}" +
           s" \t Phone number edge: ${pnp.numberOfDistinctPhonePairWithinDegreeRange}")
