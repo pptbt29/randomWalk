@@ -20,7 +20,7 @@ class PhoneNumberPairDataset(
   var pnpWithinDegreeRange: DataFrame = _
   var indexedPnpWithinDegreeRange: DataFrame = _
 
-  def setDegreeRange(minOutDegree: Int, maxOutDegree: Int, minInDegree: Int, maxIndegree: Int): PhoneNumberPairDataset = {
+  def setDegreeRangez(minOutDegree: Int, maxOutDegree: Int, minInDegree: Int, maxIndegree: Int): PhoneNumberPairDataset = {
     outDegreeForEachPhoneNumWithinRange = getOutDegreeForEachPhoneNumWithinRange(minOutDegree, maxOutDegree)
     inDegreeForEachPhoneNumWithinRange = getInDegreeForEachPhoneNumWithinRange(minInDegree, maxIndegree)
     idOfPhoneNumberWithinRange = inDegreeForEachPhoneNumWithinRange.join(outDegreeForEachPhoneNumWithinRange,
@@ -60,8 +60,9 @@ class PhoneNumberPairDataset(
 
   def numberOfDistinctPhonePairWithinDegreeRange: Long = {
     checkIfDegreeRangeIsSet()
-    checkIfPnpWithinDegreeRangeIsSet()
-    indexedPnpWithinDegreeRange.count()
+    checkIfEitherPnpWithinDegreeRangeIsSet()
+    if (pnpWithinDegreeRange == null) indexedPnpWithinDegreeRange.count()
+    else pnpWithinDegreeRange.count()
   }
 
   def getOutDegreeForEachPhoneNumWithinRange(minOutDegree: Int, maxOutDegree: Int): DataFrame = {
@@ -101,8 +102,8 @@ class PhoneNumberPairDataset(
       throw new Exception("Setup the degree range first")
   }
 
-  def checkIfPnpWithinDegreeRangeIsSet(): Unit = {
-    if (indexedPnpWithinDegreeRange == null)
-      throw new Exception("Set the pnpWithinDegreeRange first")
+  def checkIfEitherPnpWithinDegreeRangeIsSet(): Unit = {
+    if (indexedPnpWithinDegreeRange == null && pnpWithinDegreeRange == null)
+      throw new Exception("Set indexedPnpWithinDegreeRange or pnpWithinDegreeRange first")
   }
 }
