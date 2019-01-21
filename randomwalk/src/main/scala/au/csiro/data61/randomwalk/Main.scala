@@ -31,6 +31,7 @@ object Main extends SparkJob {
     .enableHiveSupport()
     .getOrCreate()
   spark.sparkContext.setLogLevel("WARN")
+
   import spark.implicits._
 
   def main(args: Array[String]) {
@@ -45,9 +46,13 @@ object Main extends SparkJob {
           params.user_table_date
         )
         pnp.setDegreeRange(params.min_outdegree, params.max_outdegree, params.min_indegree, params.max_indegree)
-            .setIndexedPnpWithinDegreeRange()
+          .setIndexedPnpWithinDegreeRange()
         pnp.idOfPhoneNumberWithinRange.rdd.repartition(1).saveAsTextFile(s"${params.output}/id2phoneNumber")
         params.input = pnp
+        hdfsWriter.write(s"Phone number node: ${pnp.numberOfDistinctPhoneWithinDegreeRange}" +
+          s" \t Phone number edge: ${pnp.numberOfDistinctPhonePairWithinDegreeRange}")
+        hdfsWriter.flush()
+        hdfsWriter.close()
         runJob(context, null, params)
 
       case None => sys.exit(1)
@@ -71,8 +76,8 @@ object Main extends SparkJob {
     node_vector.join(idOfPhoneNumber, node_vector("nodeId") === idOfPhoneNumber("id"))
       .select("phone_number", "vector").rdd
       .map { case Row(phone_number, vector: mutable.WrappedArray[Float]) =>
-      s"$phone_number\t${vector.mkString("\t")}"
-    }.repartition(numPartitions).saveAsTextFile(s"${config.output}/${Property.vectorSuffix}")
+        s"$phone_number\t${vector.mkString("\t")}"
+      }.repartition(numPartitions).saveAsTextFile(s"${config.output}/${Property.vectorSuffix}")
   }
 
   /**
@@ -123,7 +128,7 @@ object Main extends SparkJob {
     word2vec.setLearningRate(param.w2vLr)
       .setNumIterations(param.w2vIter)
       .setNumPartitions(param.w2vPartitions)
-      .setMinCount(2)
+      .setMinCount(0)
       .setVectorSize(param.w2vDim)
       .setWindowSize(param.w2vWindow)
   }
@@ -149,7 +154,7 @@ object Main extends SparkJob {
         saveModelAndFeatures(model, context, params)
       }
       case TaskName.randomwalk => doRandomWalk(context, params)
-      case TaskName.embedding =>{
+      case TaskName.embedding => {
         val paths = context.textFile(params.walking_series_input).repartition(params.rddPartitions).
           map(_.split("\\s+").toSeq)
         val word2Vec = configureWord2Vec(params)

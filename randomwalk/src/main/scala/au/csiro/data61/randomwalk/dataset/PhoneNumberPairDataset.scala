@@ -20,7 +20,7 @@ class PhoneNumberPairDataset(
   var pnpWithinDegreeRange: DataFrame = _
   var indexedPnpWithinDegreeRange: DataFrame = _
 
-  def setDegreeRangez(minOutDegree: Int, maxOutDegree: Int, minInDegree: Int, maxIndegree: Int): PhoneNumberPairDataset = {
+  def setDegreeRange(minOutDegree: Int, maxOutDegree: Int, minInDegree: Int, maxIndegree: Int): PhoneNumberPairDataset = {
     outDegreeForEachPhoneNumWithinRange = getOutDegreeForEachPhoneNumWithinRange(minOutDegree, maxOutDegree)
     inDegreeForEachPhoneNumWithinRange = getInDegreeForEachPhoneNumWithinRange(minInDegree, maxIndegree)
     idOfPhoneNumberWithinRange = inDegreeForEachPhoneNumWithinRange.join(outDegreeForEachPhoneNumWithinRange,
