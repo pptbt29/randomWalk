@@ -48,15 +48,10 @@ object Main extends SparkJob {
             .setIndexedPnpWithinDegreeRange()
         pnp.idOfPhoneNumberWithinRange.rdd.repartition(1).saveAsTextFile(s"${params.output}/id2phoneNumber")
         params.input = pnp
-<<<<<<< HEAD
         hdfsWriter.write(s"Phone number node: ${pnp.numberOfDistinctPhoneWithinDegreeRange}" +
           s" \t Phone number edge: ${pnp.numberOfDistinctPhonePairWithinDegreeRange}")
         hdfsWriter.flush()
         hdfsWriter.close()
-=======
-        hdfsWriter.write(s"Phone number node: ${pnp.numberOfdistinctPhoneWithinDegreeRange}" +
-          s" \t Phone number edge: ${pnp.numberOfdistinctPhonePairWithinDegreeRange}")
->>>>>>> parent of 8f2d83a... update function name numberOfdistinctPhoneWithinDegreeRange to numberOfDistinctPhoneWithinDegreeRange
         runJob(context, null, params)
 
       case None => sys.exit(1)
