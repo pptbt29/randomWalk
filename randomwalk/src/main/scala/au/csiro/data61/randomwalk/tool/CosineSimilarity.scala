@@ -1,6 +1,6 @@
 package au.csiro.data61.randomwalk.tool
 
-object CosineSimilarity {
+object CosineSimilarity extends Serializable {
 
   def cosineSimilarity(x: Array[Double], y: Array[Double]): Double = {
     require(x.size == y.size)
