@@ -5,22 +5,24 @@ import scala.collection.{mutable => m}
 
 object PhoneNumberPairTool {
   val spark: SparkSession = SparkSession.builder().getOrCreate()
+
   import spark.implicits._
 
   var phoneNumber2vec: DataFrame = _
 
-  case class PhoneNumberConsineSimilarityPair (phoneNumber: String, cosSim: Double)
+  case class PhoneNumberConsineSimilarityPair(phoneNumber: String, cosSim: Double)
 
   /**
     * Read the phoneNumber2vec file and generate the phoneNumber2vec dataframe
     * the format of data from the input file should be
     * phoneNumber vector[0] vector[1] vector[2] ... vector[n]
+    *
     * @param phoneNumber2vecFilePath the path of input file
     * @return
     */
   def setPhoneNumber2vec(phoneNumber2vecFilePath: String): Unit = {
     phoneNumber2vec = spark.sparkContext.textFile(phoneNumber2vecFilePath)
-      .map( (line: String) => {
+      .map((line: String) => {
         val arrayTemp: Array[String] = line.split("\\s")
         (arrayTemp(0), arrayTemp.slice(1, arrayTemp.length).map(_.toDouble))
       }).toDF("number", "vector")
@@ -39,27 +41,18 @@ object PhoneNumberPairTool {
     CosineSimilarity.cosineSimilarity(vector1, vector2)
   }
 
-  def getTopTenSimilarity(phoneNumber: String): Array[String] = {
-    val topTenPhoneNumbersPq: m.PriorityQueue[PhoneNumberConsineSimilarityPair] =
-      new m.PriorityQueue[PhoneNumberConsineSimilarityPair]()(Ordering.by((a: PhoneNumberConsineSimilarityPair) => a.cosSim)).reverse
-    val vectorOfPhoneNumber = getVectorOfPhoneNumber(phoneNumber)
-    println("pq successfully initiate")
-    phoneNumber2vec.collect().foreach{ case Row(phoneNumber: String, vector: m.WrappedArray[Double]) =>
-      val cosSim = CosineSimilarity.cosineSimilarity(vectorOfPhoneNumber, vector.toArray)
-      if(topTenPhoneNumbersPq.length < 10) topTenPhoneNumbersPq.enqueue( PhoneNumberConsineSimilarityPair(phoneNumber, cosSim))
-      else {
-        if (cosSim > topTenPhoneNumbersPq.head.cosSim) {
-          topTenPhoneNumbersPq.enqueue( PhoneNumberConsineSimilarityPair(phoneNumber, cosSim))
-          topTenPhoneNumbersPq.dequeue()
-        }
-      }
-    }
-    println("Successfully collect top ten phoneNumber")
-    val topTenPhoneNumbersArray = new m.ArrayBuffer[String]()
-    topTenPhoneNumbersPq.foreach( (numAndCosSim: PhoneNumberConsineSimilarityPair) => {
-      println(s"phone number: ${numAndCosSim.phoneNumber}  cosine similarity: ${numAndCosSim.cosSim}")
-      topTenPhoneNumbersArray += numAndCosSim.phoneNumber
-    })
-    topTenPhoneNumbersArray.toArray[String]
+  def getTopNSimilarity(phoneNumber: String, n: Int): Array[String] = {
+    val vectorOfPhoneNumberBc = spark.sparkContext.broadcast(getVectorOfPhoneNumber(phoneNumber))
+    phoneNumber2vec.rdd.map { case Row(phoneNumber: String, vector: m.WrappedArray[Double]) =>
+      val vectorOfPhoneNumber = vectorOfPhoneNumberBc.value
+      val cosSim: Double = CosineSimilarity.cosineSimilarity(vectorOfPhoneNumber, vector.toArray)
+      (cosSim, (phoneNumber, vector.toArray))
+    }.sortByKey(ascending = false)
+      .map { case (cosSim, (phoneNumber: String, vector: Array[Double])) =>
+        print(s"phone number: $phoneNumber  cos similarity: $cosSim  vector: [ ")
+        vector.foreach(vectorElement => print(s"$vectorElement "))
+        println("]")
+        phoneNumber
+      }.top(n)
   }
 }
