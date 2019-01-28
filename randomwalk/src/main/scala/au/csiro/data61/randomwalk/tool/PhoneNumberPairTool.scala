@@ -3,7 +3,7 @@ package au.csiro.data61.randomwalk.tool
 import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 import scala.collection.{mutable => m}
 
-object PhoneNumberPairTool {
+object PhoneNumberPairTool extends Serializable {
   val spark: SparkSession = SparkSession.builder().getOrCreate()
 
   import spark.implicits._
@@ -41,18 +41,22 @@ object PhoneNumberPairTool {
     CosineSimilarity.cosineSimilarity(vector1, vector2)
   }
 
-  def getTopNSimilarity(phoneNumber: String, n: Int): Array[String] = {
+  def getTopNSimilarity(phoneNumber: String, n: Int): Array[(String, Double, Array[Double])] = {
     val vectorOfPhoneNumberBc = spark.sparkContext.broadcast(getVectorOfPhoneNumber(phoneNumber))
-    phoneNumber2vec.rdd.map { case Row(phoneNumber: String, vector: m.WrappedArray[Double]) =>
+    val topNPhoneNumber = phoneNumber2vec.rdd.map { case Row(phoneNumber: String, vector: m.WrappedArray[Double]) =>
       val vectorOfPhoneNumber = vectorOfPhoneNumberBc.value
       val cosSim: Double = CosineSimilarity.cosineSimilarity(vectorOfPhoneNumber, vector.toArray)
       (cosSim, (phoneNumber, vector.toArray))
     }.sortByKey(ascending = false)
       .map { case (cosSim, (phoneNumber: String, vector: Array[Double])) =>
-        print(s"phone number: $phoneNumber  cos similarity: $cosSim  vector: [ ")
-        vector.foreach(vectorElement => print(s"$vectorElement "))
-        println("]")
-        phoneNumber
-      }.top(n)
+
+        (phoneNumber, cosSim, vector)
+      }.take(n + 1)
+    topNPhoneNumber.foreach { case (phoneNumber: String, cosSim: Double, vector: Array[Double]) =>
+      print(s"phone number: $phoneNumber  cos similarity: $cosSim  vector: [ ")
+      vector.foreach(vectorElement => print(s"$vectorElement, "))
+      println("]")
+    }
+    topNPhoneNumber
   }
 }
